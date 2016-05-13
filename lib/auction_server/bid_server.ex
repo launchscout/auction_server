@@ -4,6 +4,8 @@ defmodule AuctionServer.BidServer do
   alias AuctionServer.Repo
   alias AuctionServer.Bid
 
+  import Ecto.Query, only: [from: 2]
+
   # Client API
 
   def start_link(opts \\ []) do
@@ -12,6 +14,10 @@ defmodule AuctionServer.BidServer do
 
   def new_bid(bid_params) do
     GenServer.call(:bid_server, {:new_bid, bid_params})
+  end
+
+  def max_bid do
+    GenServer.call(:bid_server, {:max_bid, []})
   end
 
   # Server implementation
@@ -30,6 +36,12 @@ defmodule AuctionServer.BidServer do
       {:error, changeset} ->
         {:reply, {:error, changeset}, bids}
     end
+  end
+
+  def handle_call({:max_bid, _}, _from, bids) do
+    max_amount = Repo.one(from b in Bid, select: max(b.amount))
+    max_bid = Repo.one(from b in Bid, where: b.amount == ^max_amount)
+    {:reply, {:ok, max_bid}, bids}
   end
 
 end
